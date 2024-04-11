@@ -9,10 +9,8 @@ class AgePredictionModel(nn.Module):
         self.fc1 = nn.Linear(30, 64)
         self.fc2 = nn.Linear(64, 128)
         self.fc3 = nn.Linear(128, 256)
-        # self.fc4 = nn.Linear(256, 512)
-        # self.fc5 = nn.Linear(512, 128)
-        self.fc6 = nn.Linear(256, 64)
-        self.fc7 = nn.Linear(64, 1)
+        self.fc4 = nn.Linear(256, 64)
+        self.fc5 = nn.Linear(64, 1)
         self.dropout = nn.Dropout(0.5)
         self.l1_lambda = l1_lambda
         self.l2_lambda = l2_lambda
@@ -22,11 +20,8 @@ class AgePredictionModel(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        # x = F.relu(self.fc4(x))
-        # x = F.relu(self.fc5(x))
-        x = F.relu(self.fc6(x))
-        # x = self.dropout(x)
-        x = self.fc7(x) # No activation, direct regression
+        x = F.relu(self.fc4(x))
+        x = self.fc5(x) # No activation, direct regression
         
         # # L1 regularization
         # l1_reg = torch.tensor(0., device=x.device)
