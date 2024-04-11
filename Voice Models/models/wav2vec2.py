@@ -52,7 +52,6 @@ model = AgeModel.from_pretrained(model_name).to(device)
 
 # dummy signal
 sampling_rate = 16000
-# signal, sr = librosa.load("/Users/shwethaiyer/Downloads/CDS_Project/data/audio/accent_kaggle_twi5.flac", sr=sampling_rate)
 
 def process_func(signal: np.ndarray, sampling_rate: int) -> np.ndarray:
     # Normalize and prepare signal
@@ -72,25 +71,3 @@ def process_func(signal: np.ndarray, sampling_rate: int) -> np.ndarray:
     # Convert logits to numpy for further processing or analysis
     age_prediction = logits_age.detach().cpu().numpy()
     return age_prediction
-
-
-# Example usage
-# age_prediction = process_func(signal, sampling_rate)
-# print(age_prediction)
-
-data = pd.read_csv("data/FINAL_AUDIO_FEATURES_19916.csv")
-
-list_audio = os.listdir('/Users/shwethaiyer/Downloads/CDS_Project/data/audio')
-
-for i, audio in enumerate(list_audio):
-    print(i)
-    signal, sr = librosa.load(f"/Users/shwethaiyer/Downloads/CDS_Project/data/audio/{audio}", sr=sampling_rate)
-
-    duration = librosa.get_duration(y=signal, sr=sampling_rate)
-
-    age_prediction = process_func(signal, sampling_rate)
-
-    real_age = int(data.loc[data['filename'] == audio]['age'])
-
-    with open("/Users/shwethaiyer/Downloads/CDS_Project/data/wav2vec2result3.txt", "a") as file:
-        file.write(f"{audio}\t{duration}\t{real_age}\t{age_prediction[0][0]}\t\n")
