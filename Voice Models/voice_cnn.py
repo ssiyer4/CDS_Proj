@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from data.voice_dataset import VoiceDataset
 from utils.accuracy import calculate_accuracy, map_to_age_band
-from models.cnn_model import AgePredictionModel
+from models.nn_model import AgePredictionModel
 import torch.nn as nn
 from tqdm.auto import tqdm
 import numpy as np
@@ -11,8 +11,8 @@ import torch
 
 def train_one_epoch(voice_model, train_data, optimizer, criterion) -> None:
     """
-    Trains CNN for one epoch, for age prediction
-    :param voice_model: CNN model
+    Trains NN for one epoch, for age prediction
+    :param voice_model: NN model
     :param train_data: training data
     :param optimizer: optimizer
     :param criterion: loss criterion
@@ -32,7 +32,6 @@ def train_one_epoch(voice_model, train_data, optimizer, criterion) -> None:
         outputs = outputs.to(torch.float32)
         mse_loss = criterion(outputs.squeeze(), targets.float())
         rmse_loss = torch.sqrt(mse_loss) # Compute the RMSE from MSE
-        # total_loss = rmse_loss + reg_term
         rmse_loss.backward()
         optimizer.step()
         print(rmse_loss.item())
@@ -41,8 +40,8 @@ def train_one_epoch(voice_model, train_data, optimizer, criterion) -> None:
  
 def evaluate_one_epoch(voice_model, val_data, epoch, criterion):
     """
-    Evaluates CNN for one epoch, for age prediction
-    :param voice_model: CNN model
+    Evaluates NN for one epoch, for age prediction
+    :param voice_model: NN model
     :param train_data: validation data
     :param optimizer: optimizer
     :param criterion: loss criterion
@@ -67,8 +66,8 @@ def evaluate_one_epoch(voice_model, val_data, epoch, criterion):
  
 def test_voice_model(voice_model, test_data, criterion):
     """
-    Tests CNN for one epoch, for age prediction
-    :param voice_model: CNN model
+    Tests NN for one epoch, for age prediction
+    :param voice_model: NN model
     :param train_data: test data
     :param optimizer: optimizer
     :param criterion: loss criterion
@@ -101,8 +100,7 @@ def test_voice_model(voice_model, test_data, criterion):
 
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
- 
-    # experiment_id = mlflow.create_experiment("Training with validation set")
+
     with mlflow.start_run(experiment_id="456957762126250708"):
         # Data
         voice_dataset = VoiceDataset(args.meta)
@@ -133,7 +131,6 @@ def main(args):
         print("val_data:", val_data)
         print("test_data:", test_data)
  
-        # Pre-trained Faster R-CNN model
         voice_model = AgePredictionModel()
  
         params = voice_model.parameters()
