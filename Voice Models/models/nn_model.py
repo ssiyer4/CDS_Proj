@@ -16,12 +16,11 @@ class AgePredictionModel(nn.Module):
         self.l2_lambda = l2_lambda
 
     def forward(self, x):
-        # print("Weight matrix data type:", self.fc1.weight.dtype)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
-        x = self.fc5(x) # No activation, direct regression
+        x = self.fc5(x) #No activation, direct regression
         
         # # L1 regularization
         # l1_reg = torch.tensor(0., device=x.device)
