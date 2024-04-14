@@ -2,6 +2,12 @@ import numpy as np
 import cv2
 import tensorflow as tf
 from PIL import Image
+import pyaudio
+import wave
+import librosa
+from wav2vec import process_func
+
+##### FUNCTIONS #####
 
 # Function to preprocess image
 def preprocess_image(image, target_size=(224, 224)):
@@ -11,6 +17,10 @@ def preprocess_image(image, target_size=(224, 224)):
     image = np.expand_dims(image, axis=-1)
     image = np.tile(image, (1, 1, 1, 3))
     return image
+
+
+
+##### MAIN #####
 
 # Load the pre-trained models
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
