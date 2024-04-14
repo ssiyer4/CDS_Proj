@@ -25,7 +25,7 @@ model = tf.saved_model.load('GUI/mobilenet_model')
 
 # Initialize variables
 collection_started = False
-show_average_age = False  # Flag to indicate whether to display the average age or not
+show_average_age = False
 age_predictions = []
 
 # Load the voice age prediction model
@@ -34,6 +34,39 @@ def process_audio(audio_file):
     age_prediction = process_func(audio_signal, sampling_rate)
     return age_prediction[0][0]
 
+def fused_age_prediction(average_age_audio, average_age_image, audio_accuracy, image_accuracy):
+    relative_image_accuracy = image_accuracy /(audio_accuracy+image_accuracy)
+    relative_audio_accuracy= audio_accuracy /(audio_accuracy+image_accuracy)
+    fused_age = average_age_audio*relative_audio_accuracy + average_age_image*relative_image_accuracy
+    return fused_age
+
+def age_to_ageband(age):
+    age_mapping = {
+        (0, 4): '0-4',
+        (5, 9): '5-9',
+        (10, 14): '10-14',
+        (15, 19): '15-19',
+        (20, 24): '20-24',
+        (25, 29): '25-29',
+        (30, 34): '30-34',
+        (35, 39): '35-39',
+        (40, 44): '40-44',
+        (45, 49): '45-49',
+        (50, 54): '50-54',
+        (55, 59): '55-59',
+        (60, 64): '60-64',
+        (65, 69): '65-69',
+        (70, 74): '70-74',
+        (75, 79): '75-79',
+        (80, 84): '80-84',
+        (85, 90): '85-90'
+    }
+
+    for age_range, age_band in age_mapping.items():
+        if age_range[0] <= age <= age_range[1]:
+            return age_band
+
+    return '???'
 
 ##### MAIN #####
 
@@ -56,12 +89,10 @@ while cap.isOpened():
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30))
 
-    # Process each detected face
     for (x, y, w, h) in faces:
         face_img = gray[y:y+h, x:x+w]
         face_img = preprocess_image(face_img)
         
-        # Predict age from image
         if collection_started:
             predictions = model(face_img)
             predicted_age = predictions[0][0]
@@ -69,8 +100,13 @@ while cap.isOpened():
             age_predictions.append(float(formatted_age))
             cv2.putText(frame, "RECORDING", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         elif show_average_age:
-            cv2.putText(frame, f"Age from Audio: {average_age_audio:.1f}", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(frame, f"Average Age from Image: {average_age_image:.1f}", (x, y - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, f"Age from Audio: {average_age_audio:.1f}", (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, f"Average Age from Image: {average_age_image:.1f}", (x, y + h + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            fused_age = fused_age_prediction(average_age_audio, average_age_image, 55.6, 56.1)
+            fused_age_band = age_to_ageband(fused_age)
+            cv2.putText(frame, f"Predicted Age Band: {fused_age_band}", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
+
         else:
             cv2.putText(frame, "PRESS 'S' TO START", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
@@ -82,7 +118,7 @@ while cap.isOpened():
     key = cv2.waitKey(1)
     if key == ord('s'):
         collection_started = True
-        print("* Recording audio...")
+        print("* Recording audio ...")
         CHUNK = 4096  # Increased buffer size
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
@@ -111,7 +147,7 @@ while cap.isOpened():
             wf = wave.open(filename, 'wb')
             wf.setnchannels(CHANNELS)
             wf.setsampwidth(p.get_sample_size(FORMAT))
-            wf.setframerate(44100)  # Adjusted sample rate for recording
+            wf.setframerate(44100) 
             wf.writeframes(b''.join(audio_frames))
             wf.close()
             average_age_audio = process_audio(filename)
