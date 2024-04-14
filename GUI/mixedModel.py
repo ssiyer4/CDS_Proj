@@ -6,8 +6,7 @@ import pyaudio
 import wave
 import librosa
 from wav2vec import process_func
-from transformers import Wav2Vec2Processor, Wav2Vec2Model
-
+from wonderwords import RandomSentence
 
 
 ##### FUNCTIONS #####
@@ -24,7 +23,7 @@ def preprocess_image(image, target_size=(224, 224)):
 
 # Load the pre-trained models
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-model = tf.saved_model.load('GUI/mobilenet_model')
+image_model = tf.saved_model.load('GUI/mobilenet_model')
 
 # Initialize variables
 collection_started = False
@@ -70,6 +69,11 @@ def age_to_ageband(age):
             return age_band
     return '???'
 
+def generate_random_sentences():
+    s1 = str(RandomSentence().sentence())
+    s2 = str(RandomSentence().sentence())
+    return s1, s2
+
 
 ##### MAIN #####
 
@@ -108,7 +112,7 @@ while cap.isOpened():
         face_img = preprocess_image(face_img)
         
         if collection_started:
-            predictions = model(face_img)
+            predictions = image_model(face_img)
             predicted_age = predictions[0][0]
             formatted_age = f"{predicted_age:.1f}"
             age_predictions.append(float(formatted_age))
@@ -131,6 +135,19 @@ while cap.isOpened():
     if key == ord('s'):
         collection_started = True
         print("* Recording audio ...")
+
+        # Create new window for rng sentences
+        s1, s2 = generate_random_sentences()
+        cv2.namedWindow("Random Sentences", cv2.WINDOW_NORMAL)
+        cv2.moveWindow("Random Sentences", 700, 500)
+
+        white = 255 * np.ones((200, 600, 3), dtype=np.uint8)
+        cv2.putText(white, "Read the following sentences:", (50, 50), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), 2)
+        cv2.putText(white, s1, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(white, s2, (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.imshow("Random Sentences", white)
+
+
         CHUNK = 4096  # Increased buffer size
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
@@ -170,8 +187,9 @@ while cap.isOpened():
             fused_age_band = age_to_ageband(fused_age)
             print("Fused Age Prediction:", fused_age)
             age_predictions = []
-            show_average_age = True  # Set the flag to display the average age
+            show_average_age = True
         collection_started = False
+        cv2.destroyWindow("Random Sentences")
         stream.stop_stream()
         stream.close()
         p.terminate()
