@@ -6,6 +6,9 @@ import pyaudio
 import wave
 import librosa
 from wav2vec import process_func
+from transformers import Wav2Vec2Processor, Wav2Vec2Model
+
+
 
 ##### FUNCTIONS #####
 
@@ -30,7 +33,7 @@ age_predictions = []
 
 # Load the voice age prediction model
 def process_audio(audio_file):
-    audio_signal, sampling_rate = librosa.load(audio_file, sr=16000)  # adjust sampling rate here
+    audio_signal, sampling_rate = librosa.load(audio_file, sr=16000)
     age_prediction = process_func(audio_signal, sampling_rate)
     return age_prediction[0][0]
 
@@ -41,6 +44,7 @@ def fused_age_prediction(average_age_audio, average_age_image, audio_accuracy, i
     return fused_age
 
 def age_to_ageband(age):
+    rounded_age = round(age)
     age_mapping = {
         (0, 4): '0-4',
         (5, 9): '5-9',
@@ -61,14 +65,15 @@ def age_to_ageband(age):
         (80, 84): '80-84',
         (85, 90): '85-90'
     }
-
     for age_range, age_band in age_mapping.items():
-        if age_range[0] <= age <= age_range[1]:
+        if age_range[0] <= rounded_age <= age_range[1]:
             return age_band
-
     return '???'
 
+
 ##### MAIN #####
+
+
 
 # Creating a VideoCapture object
 cap = cv2.VideoCapture(0)
@@ -79,12 +84,21 @@ if not cap.isOpened():
 
 # Create a window
 cv2.namedWindow("Age Detection", cv2.WINDOW_GUI_NORMAL)
+instruction_lines = [
+    "PRESS 'S' TO START THE RECORDING",
+    "PRESS 'E' TO END THE RECORDING.",
+    "PRESS 'Q' TO QUIT PROGRAM."
+]
 
 while cap.isOpened():
     # Reading a frame from the webcam feed
     ret, frame = cap.read()
     if not ret:
         break
+    
+    #instructions on top left
+    for i, line in enumerate(instruction_lines):
+        cv2.putText(frame, line, (10, 30 + i * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30))
@@ -98,17 +112,15 @@ while cap.isOpened():
             predicted_age = predictions[0][0]
             formatted_age = f"{predicted_age:.1f}"
             age_predictions.append(float(formatted_age))
-            cv2.putText(frame, "RECORDING", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, "RECORDING - ", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 225), 2)
         elif show_average_age:
-            cv2.putText(frame, f"Age from Audio: {average_age_audio:.1f}", (x, y + h + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(frame, f"Average Age from Image: {average_age_image:.1f}", (x, y + h + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            fused_age = fused_age_prediction(average_age_audio, average_age_image, 55.6, 56.1)
-            fused_age_band = age_to_ageband(fused_age)
+            cv2.putText(frame, f"Predicted Age from Audio: {average_age_audio:.1f}", (10, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, f"Predicted Age from Image: {average_age_image:.1f}", (10, frame.shape[0] - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
             cv2.putText(frame, f"Predicted Age Band: {fused_age_band}", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
 
         else:
-            cv2.putText(frame, "PRESS 'S' TO START", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, "FACE DETECTED", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
         cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
@@ -133,7 +145,7 @@ while cap.isOpened():
 
         stream = p.open(format=FORMAT,
                         channels=CHANNELS,
-                        rate=44100,  # Adjusted sample rate for recording
+                        rate=16000,  # Adjusted sampling rate for recording
                         input=True,
                         frames_per_buffer=CHUNK,
                         stream_callback=callback)
@@ -154,6 +166,9 @@ while cap.isOpened():
             print(average_age_audio)
             print("Average Age from Image:", average_age_image)
             print("Age from Audio:", average_age_audio)
+            fused_age = fused_age_prediction(average_age_audio, average_age_image, 55.6, 56.1)
+            fused_age_band = age_to_ageband(fused_age)
+            print("Fused Age Prediction:", fused_age)
             age_predictions = []
             show_average_age = True  # Set the flag to display the average age
         collection_started = False
