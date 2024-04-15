@@ -130,7 +130,7 @@ while cap.isOpened():
     cv2.imshow("Age Detection", frame)
 
     key = cv2.waitKey(1)
-    if (key == ord('s') and 'stream' not in locals()):
+    if (key == ord('s')):
         collection_started = True
         print("* Recording audio ...")
 
@@ -174,7 +174,7 @@ while cap.isOpened():
             wf = wave.open(filename, 'wb')
             wf.setnchannels(CHANNELS)
             wf.setsampwidth(p.get_sample_size(FORMAT))
-            wf.setframerate(44100) 
+            wf.setframerate(16000) 
             wf.writeframes(b''.join(audio_frames))
             wf.close()
             average_age_audio = process_audio(filename)
