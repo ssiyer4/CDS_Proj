@@ -34,7 +34,7 @@ age_predictions = []
 def process_audio(audio_file):
     audio_signal, sampling_rate = librosa.load(audio_file, sr=16000)
     age_prediction = process_func(audio_signal, sampling_rate)
-    return age_prediction[0][0]
+    return age_prediction[0][0]*100 #the model returns an age from 0-100 in the format 0.XX (ie: 19 -> 0.19)
 
 def fused_age_prediction(average_age_audio, average_age_image, audio_accuracy, image_accuracy):
     relative_image_accuracy = image_accuracy /(audio_accuracy+image_accuracy)
@@ -77,8 +77,6 @@ def generate_random_sentences():
 
 ##### MAIN #####
 
-
-
 # Creating a VideoCapture object
 cap = cv2.VideoCapture(0)
 
@@ -102,7 +100,7 @@ while cap.isOpened():
     
     #instructions on top left
     for i, line in enumerate(instruction_lines):
-        cv2.putText(frame, line, (10, 30 + i * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv2.putText(frame, line, (10, 30 + i * 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30))
@@ -118,8 +116,8 @@ while cap.isOpened():
             age_predictions.append(float(formatted_age))
             cv2.putText(frame, "RECORDING - ", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 225), 2)
         elif show_average_age:
-            cv2.putText(frame, f"Predicted Age from Audio: {average_age_audio:.1f}", (10, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(frame, f"Predicted Age from Image: {average_age_image:.1f}", (10, frame.shape[0] - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, f"Predicted Age from Audio: {average_age_audio:.1f}", (10, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            cv2.putText(frame, f"Predicted Age from Image: {average_age_image:.1f}", (10, frame.shape[0] - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
             cv2.putText(frame, f"Predicted Age Band: {fused_age_band}", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
 
@@ -132,7 +130,7 @@ while cap.isOpened():
     cv2.imshow("Age Detection", frame)
 
     key = cv2.waitKey(1)
-    if key == ord('s'):
+    if (key == ord('s') and 'stream' not in locals()):
         collection_started = True
         print("* Recording audio ...")
 
@@ -142,9 +140,9 @@ while cap.isOpened():
         cv2.moveWindow("Random Sentences", 700, 500)
 
         white = 255 * np.ones((200, 600, 3), dtype=np.uint8)
-        cv2.putText(white, "Read the following sentences:", (50, 50), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), 2)
-        cv2.putText(white, s1, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        cv2.putText(white, s2, (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(white, "Read the following sentences during the recording:", (50, 50), cv2.FONT_HERSHEY_PLAIN, 0.8, (0, 0, 0), 1)
+        cv2.putText(white, s1, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1)
+        cv2.putText(white, s2, (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 1)
         cv2.imshow("Random Sentences", white)
 
 
@@ -169,7 +167,7 @@ while cap.isOpened():
 
         recording = True
 
-    elif key == ord('e'):
+    elif (key == ord('e') and 'stream' in locals()):
         if age_predictions:
             average_age_image = sum(age_predictions) / len(age_predictions)
             filename = "output.wav"
