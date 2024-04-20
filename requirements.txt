@@ -1,0 +1,9 @@
+numpy==1.21.1
+opencv-python==4.5.3.56
+tensorflow==2.7.0
+Pillow==8.4.0
+pyaudio==0.2.11
+librosa==0.8.1
+wav2vec==0.2.3
+wonderwords==0.5.0
+portaudio==19.6.0.1
